@@ -1,0 +1,18 @@
+- hosts: host
+  vars_prompt:
+   - name: "name"
+      prompt: container name
+     register: name
+     private: no
+   - name: "port"
+      prompt: port no
+     private: no
+     register: port
+    
+
+   - tasks:
+
+     
+     - command: docker run -i --name {{name}} -v /html/:/usr/share/nginx/html/ -v /nginx-conf/:/etc/nginx/conf.d/  -v /pool/:/etc/php/7.0/fpm/pool.d/ -p {{port}}:80 -d nginx-php:v2
+
+       

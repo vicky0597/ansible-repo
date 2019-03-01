@@ -1,0 +1,38 @@
+- hosts: host
+  vars_prompt:
+     - name: "name"
+       prompt: enter a container name
+       private: no
+       register: name
+     - name: "db"
+       prompt: enter a name for database
+       private: no
+       register: db  
+
+     - name: "dbpasswd"
+       prompt: enter a batabase password
+       private: no
+       register: dbpasswd
+
+     - name: "dbuser"
+       prompt: name of db user
+       private: no
+       register: dbuser
+
+
+     - name: "port"
+       prompt: enter a port no
+       private: no
+       register: port
+  tasks:
+     - command: docker run -i --name {{name}} -v /html/:/usr/share/nginx/html/ -v /nginx-conf/:/etc/nginx/conf.d/  -v /pool/:/etc/php/7.0/fpm/pool.d/ -p {{port}}:80 -d nginx-php:v2
+    
+     - shell: docker exec -itd {{name}} /bin/bash -c /etc/init.d/php-start.sh
+ 
+     
+     - docker_container:
+        name: "mysql"
+        image: mysql
+        state: present
+         
+        

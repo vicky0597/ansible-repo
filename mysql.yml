@@ -1,0 +1,14 @@
+- hosts: host
+  tasks:
+     - docker_container:
+          image: mysql
+          name: mysql1
+          detach: true
+          state: present
+          env:
+              MYSQL_ROOT_PASSWORD: "mypassword"
+              MYSQL_DATABASE : "wdpress"
+              MYSQL_USER: "wpress"
+              MYSQL_PASSWORD : "password"
+      
+     - command: docker start mysql1

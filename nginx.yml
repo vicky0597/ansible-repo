@@ -1,0 +1,129 @@
+- hosts: vm2
+  vars_prompt:
+#    - name: "cname"
+#      prompt: "enter a name for your container"
+ ##   - name: " port"
+ #     prompt: "enter the port to map"
+#    - name: "password"
+#      prompt: "enter the mysql password"
+#    - name: "name"
+#      prompt: "enter a user name"
+#    - name: "dname"
+#      prompt: "enter a database name"      
+
+
+
+
+
+
+
+  tasks:
+   
+    - copy:
+        src: /ansible/run-me.sh
+        dest: /n/
+        mode: 0111
+         
+  #  - shell:  /bin/bash /n/run-me.sh
+
+
+    - copy:
+        src: /ansible/ansible.conf
+        dest: /pool1/
+        
+    - copy:
+        src: /ansible/new.conf
+        dest: /nginx1/
+
+    - unarchive:
+         src: https://wordpress.org/latest.tar.gz
+         dest: /web1/
+         remote_src: yes
+    
+    - docker_network:
+          name: net
+
+ 
+
+
+    - docker_container:
+         image: mysql:v1
+         name: vickymy1
+         entrypoint:
+            - /bin/bash
+         detach: true
+         state: present
+         restart_policy: on-failure 
+         env:
+             MYSQL_ROOT_PASSWORD: "password@123"
+             MYSQL_DATABASE : "word"
+             MYSQL_USER: "wpuser"
+             MYSQL_PASSWORD : "mypassword"
+         volumes:
+            - /mysql1:/var/lib/mysql/
+         exposed_ports: 3306/tcp
+      
+         network_mode: net
+             
+    - command: docker start vickymy1  
+    
+    - command: cp /web1/wordpress/wp-config-sample.php /web1/wordpress/wp-config.php
+
+    - replace:
+         path: /web1/wordpress/wp-config.php
+         regexp: database_name_here
+         replace:  word
+    - replace:
+         path: /web1/wordpress/wp-config.php
+         regexp: username_here
+         replace: wpuser
+    - replace:  
+         path: /web1/wordpress/wp-config.php       
+         regexp: password_here
+         replace: mypassword
+    - replace: 
+         path: /web1/wordpress/wp-config.php
+         regexp: localhost
+         replace: vickymy1 
+ 
+
+
+
+
+
+
+    - docker_container:
+          image: vicky0597/buid:php7
+          name: wordpress
+          detach: yes
+          entrypoint:
+              - /bin/bash
+          exposed_ports: 81/tcp 443/tcp 8000/tcp
+          published_ports: 103.90.242.159:182:81
+          network_mode: net
+          volumes:
+              - /pool1/:/etc/php-fpm.d/
+              - /nginx1/:/etc/nginx/conf.d/   
+              - /web1:/usr/share/nginx/html/
+          restart_policy: on-failure
+       
+  #  - file:
+   #      path: /usr/share/nginx/html/wordpress/
+  #       owner: nginx
+   #      group: nginx
+    #     mode: 775
+    #     recurse: yes
+
+
+
+ #   - command: docker rm -f  wordpress
+#    - command: docker run -d --name  wordpress -p 182:81 -v /web:/usr/share/nginx/html/ -v /pool:/etc/php-fpm.d/ -v /nginx/:/etc/nginx/conf.d/ --link vickymy1:vic buid:v1
+
+
+
+
+  #  - docker_network:
+   #       name: net1
+   #       connected:
+   #         - wordpress
+   #         - vickymy1

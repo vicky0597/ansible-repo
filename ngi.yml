@@ -1,0 +1,22 @@
+- hosts: vm2
+  tasks:
+
+
+
+
+
+
+
+    - docker_container:
+          image: mysql
+          name: some
+          detach: true
+     
+          env:
+             MYSQL_ROOT_PASSWORD: "password@123"
+             MYSQL_DATABASE : "word"
+             MYSQL_USER: "wpuser"
+             MYSQL_PASSWORD : "mypassword"
+          volumes:
+              - /mysql1/:/var/lib/mysql
+          network_mode: net2

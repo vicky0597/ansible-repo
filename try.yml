@@ -1,0 +1,120 @@
+- hosts: vm2
+  vars_prompt:
+#    - name: "cname"
+#      prompt: "enter a name for your container"
+ #   - name: " port"
+ #     prompt: "enter the port to map"
+#    - name: "password"
+#      prompt: "enter the mysql password"
+#    - name: "name"
+#      prompt: "enter a user name"
+#    - name: "dname"
+#      prompt: "enter a database name"      
+
+
+
+
+
+
+
+  tasks:
+   
+    - copy:
+        src: /ansible/run-me.sh
+        dest: /n/
+        mode: 0111
+         
+  #  - shell:  /bin/bash /n/run-me.sh
+
+
+    - copy:
+        src: /ansible/ansible.conf
+        dest: /pool/
+        
+    - copy:
+        src: /ansible/new.conf
+        dest: /nginx/
+
+    - unarchive:
+         src: https://wordpress.org/latest.tar.gz
+         dest: /web/
+         remote_src: yes
+         mode: 775
+         owner: nginx
+         group: nginx
+    
+    - docker_network:
+          name: net1
+
+ 
+
+
+    - docker_container:
+         image: mysql
+         name: vickymy1
+         detach: true
+         state: present
+         networks:
+            - name:  net1
+              alias:
+                - new
+         env:
+             MYSQL_ROOT_PASSWORD: "mypassword"
+             MYSQL_DATABASE : "wdpress"
+             MYSQL_USER: "wpress"
+             MYSQL_PASSWORD : "password"
+         volumes:
+            - /mysql:/var/lib/mysql/
+         exposed_ports: 3306/tcp
+    - command: docker start vickymy1
+    
+    - command: cp /web/wordpress/wp-config-sample.php /web/wordpress/wp-config.php
+
+         env:
+             WORDPRESS_DB_HOST: wpress:3306
+
+    - replace:
+         path: /web/wordpress/wp-config.php
+         regexp: username_here
+         replace: wpress
+    - replace:  
+         path: /web/wordpress/wp-config.php       
+         regexp: password_here
+         replace: password
+      
+    - docker_container:
+         image: buid:v1
+         name: wordpress
+         detach: yes
+         exposed_ports: 81/tcp
+         exposed_ports: 3306/tcp
+         published_ports: 103.90.242.159:182:81
+         volumes:
+             - /pool:/etc/php-fpm.d/
+             - /nginx/:/etc/nginx/conf.d/   
+             - /web:/usr/share/nginx/html/
+         networks:
+             - name: net1 
+               links: 
+                  - wp
+                  
+           
+    - file:
+         path: /usr/share/nginx/html/wordpress/
+         owner: nginx
+         group: nginx
+         mode: 775
+         recurse: yes
+
+
+
+
+
+
+
+
+    - docker_network:
+          name: net1
+          connected:
+            - wordpress
+            - vickymy1

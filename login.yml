@@ -1,0 +1,5 @@
+- hosts: host
+  tasks:
+      - docker_login:
+              username: vicky0597
+              password: dockerhub1.@

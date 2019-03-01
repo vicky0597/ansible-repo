@@ -1,0 +1,84 @@
+- hosts: vm2
+  vars_prompt:
+     - name: "db"
+       private: no
+       prompt: "enter db name"
+     - name: "pass"
+       private: no
+       prompt: "enter db pasword"
+     - name: "name"
+       private: no
+       prompt: "enter a db user name"
+     - name: "mydb"
+       private: no
+       prompt: "enter a name for the mysql container"
+
+  tasks:
+     - copy: 
+         src: /ansible/ansible.conf
+         dest: /pool1/
+     - copy:
+         src: /ansible/new.conf
+         dest: /nginx1/
+     - unarchive:
+         src: https://wordpress.org/latest.tar.gz
+         dest: /web1/
+         remote_src: yes
+
+
+     - docker_network:
+          name: net2
+
+     - docker_container:
+          image: mysql:5.6
+          name: "{{mydb}}"
+          detach: true
+          exposed_ports: 3306
+          env:
+             MYSQL_ROOT_PASSWORD: "password@123"
+             MYSQL_DATABASE : "{{db}}"
+             MYSQL_USER: "{{name}}"
+             MYSQL_PASSWORD : "{{pass}}"
+          volumes:
+              - /mysql1/:/var/lib/mysql
+          network_mode: net2
+   #  - command: docker exec -itd latest1 service mysqld start
+     - command: cp /web1/wordpress/wp-config-sample.php /web1/wordpress/wp-config.php
+
+     - replace:
+          path: /web1/wordpress/wp-config.php
+          regexp: database_name_here
+          replace:  "{{db}}"
+     - replace:
+          path: /web1/wordpress/wp-config.php
+          regexp: username_here
+          replace: "{{name}}"
+     - replace:
+          path: /web1/wordpress/wp-config.php
+          regexp: password_here
+          replace: "{{pass}}"
+     - replace:
+          path: /web1/wordpress/wp-config.php
+          regexp: localhost
+          replace: "{{mydb}}"
+
+     - docker_container:
+          image: vicky0597/buid:v1
+          name: server2
+        #  detach: true
+          command: tail -f /dev/null
+          exposed_ports: 81 443
+          published_ports: 103.90.242.159:80:80
+          volumes:
+              - /pool1/:/etc/php-fpm.d/
+              - /nginx1/:/etc/nginx/conf.d/
+              - /web1/:/var/www/html/
+                  
+          network_mode: net2
+
+     - command: docker exec -it server2 chmod 775 -R /var/www/html/wordpress/
+     - command: docker exec -it server2 chown nginx:nginx -R /var/www/html/wordpress/
+     - command: docker exec -itd server2 service nginx start
+     - command: docker exec -itd server2 service php-fpm start 
+    #  - command: docker exec -itd latest2 service mysqld start
+       
